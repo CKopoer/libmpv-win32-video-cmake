@@ -51,6 +51,7 @@ ExternalProject_Add(ffmpeg
         --enable-stripping
 
         --disable-muxers
+        --enable-muxer=spdif
         --disable-decoders
         --disable-encoders
         --disable-demuxers

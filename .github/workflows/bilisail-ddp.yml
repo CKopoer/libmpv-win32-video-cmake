@@ -1,0 +1,33 @@
+name: BiliSail Windows DD+ SDK
+on:
+  push:
+    branches: [codex/windows-ddp-passthrough]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            image: ghcr.io/btbn/ffmpeg-builds/win64-lgpl@sha256:f0fd165f48e52858310ef59e06430ec8a7d88da7adf5a5860d23865a20650772
+          - arch: arm64
+            image: ghcr.io/btbn/ffmpeg-builds/winarm64-lgpl@sha256:89654f951ec4d8ee804a2cb7a68b78f50dd9effc5184965229fff5d065f0e11a
+    container: ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@v6
+      - run: bash scripts/bilisail-windows-sdk.sh
+        env:
+          SDK_ARCH: ${{ matrix.arch }}
+          BUILD_IMAGE: ${{ matrix.image }}
+      - uses: actions/upload-artifact@v6
+        with:
+          name: windows-${{ matrix.arch }}
+          path: mpv-dev-windows-${{ matrix.arch }}.zip
+          if-no-files-found: error
