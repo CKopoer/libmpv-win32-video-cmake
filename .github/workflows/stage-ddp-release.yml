@@ -1,0 +1,34 @@
+name: Stage verified Windows SDKs
+on:
+  push:
+    tags: [windows-ddp-*]
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Stage the two SDKs from the matching build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          source=$(git log -1 --format=%H -- packages scripts/bilisail-windows-sdk.sh .github/workflows/bilisail-ddp.yml)
+          run=$(gh run list --commit "$source" --limit 10 --json name,databaseId --jq '.[] | select(.name=="BiliSail Windows DD+ SDK") | .databaseId' | head -1)
+          test -n "$run"
+          gh run watch "$run" --exit-status --interval 15
+          for arch in x64 arm64; do
+            gh run download "$run" -n "windows-$arch" -D assets/
+            test -s "assets/mpv-dev-windows-$arch.zip"
+          done
+          (cd assets && sha256sum mpv-dev-windows-*.zip) > SHA256SUMS
+          gh release create "$TAG" --verify-tag --draft --title "Windows DD+ playback SDK" \
+            --notes "Built from $source. Build: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run" \
+            assets/mpv-dev-windows-*.zip SHA256SUMS
