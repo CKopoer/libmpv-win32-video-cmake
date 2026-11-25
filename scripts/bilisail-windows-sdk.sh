@@ -43,8 +43,11 @@ if [[ $SDK_ARCH == x64 ]]; then
 else
   gl=(-Dgl=disabled -Degl-angle=disabled)
 fi
+# This builds a cross SDK. Meson's compiler probe cannot launch a PE file
+# through Wine on every hosted runner; the packaged DLL is tested on Windows.
+sed '/^[[:space:]]*exe_wrapper[[:space:]]*=/d' /cross.meson > sdk-cross.meson
 (cd mpv
- meson setup build --cross-file /cross.meson --buildtype=release --default-library=shared --prefer-static \
+ meson setup build --cross-file "$recipe/sdk-cross.meson" --buildtype=release --default-library=shared --prefer-static \
    -Dgpl=false -Dlibmpv=true -Dc_link_args="$FF_LIBS" -Dcpp_link_args="$FF_LIBS" \
    -Dlua=disabled -Djavascript=disabled -Dwin32-smtc=disabled -Dvulkan=disabled \
    -Dd3d11=enabled -Dd3d-hwaccel=enabled -Dspirv-cross=enabled "${gl[@]}"
